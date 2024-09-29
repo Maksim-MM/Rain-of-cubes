@@ -5,10 +5,10 @@ using Random = UnityEngine.Random;
 
 public class SpawnArea : MonoBehaviour
 {
-    [SerializeField] private GameObject _cubePrefab;
+    [SerializeField] private Cube _cubePrefab;
 
     private int _poolCapacity = 5;
-    private int _poolMaxSize = 5;
+    private int _poolMaxSize = 10;
     
     private float _randomAngle;
     private float _randomRadius;
@@ -16,16 +16,15 @@ public class SpawnArea : MonoBehaviour
     private float _spawnDelay = 2f;
     
     private Vector3 _spawnOffset = new Vector3(0f, -0.75f, 0f);
-    private Coroutine _countCoroutine;
-
-    private ObjectPool<GameObject> _cubePool;
+    
+    private ObjectPool<Cube> _cubePool;
 
     private void Awake()
     {
-        _cubePool = new ObjectPool<GameObject>(
+        _cubePool = new ObjectPool<Cube>(
             createFunc: () => Instantiate(_cubePrefab),
             actionOnGet: (obj) => SpawnCube(obj),
-            actionOnRelease: (obj) => ResetCube(obj),
+            actionOnRelease: (obj) => ReturnToPool(obj),
             actionOnDestroy: (obj) => Destroy(obj),
             collectionCheck: true,
             defaultCapacity: _poolCapacity,
@@ -37,19 +36,20 @@ public class SpawnArea : MonoBehaviour
         InvokeRepeating(nameof(GetCube), 0.0f, _spawnDelay);
     }
     
-    private IEnumerator ReturnToPool(GameObject cube)
+    private void SpawnCube(Cube cube)
     {
-        var wait = new WaitForSeconds(Random.Range(2,6));
-        yield return wait;
-        
-        _cubePool.Release(cube);
+        cube.transform.position = GetSpawnPoint();
+        cube.LifeStopped += ReturnToPool;
+        cube.SetOn();
     }
-
-    private void SpawnCube(GameObject cubePrefab)
+    
+    private void ReturnToPool(Cube cube)
     {
-        cubePrefab.transform.position = GetSpawnPoint();
-        cubePrefab.SetActive(true);
-        _countCoroutine = StartCoroutine(ReturnToPool(cubePrefab));
+        if (cube.GetCubeStatus()) return;
+        
+        cube.LifeStopped -= ReturnToPool;
+        cube.SetOff();
+        _cubePool.Release(cube);
     }
     
     private void GetCube()
@@ -73,17 +73,5 @@ public class SpawnArea : MonoBehaviour
     {
         Mesh mesh = GetComponent<MeshFilter>().mesh;
         return mesh.bounds.size.x/_radiusScaler;
-    }
-
-    private void ResetCube(GameObject cube)
-    {
-        Cube cubeComponent = cube.GetComponent<Cube>();
-    
-        if (cubeComponent != null)
-        {
-            cubeComponent.ResetToDefault();
-        }
-        
-        cube.SetActive(false);
     }
 }

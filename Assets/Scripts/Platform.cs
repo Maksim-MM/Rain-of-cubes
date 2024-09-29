@@ -9,14 +9,9 @@ public class Platform : MonoBehaviour
     {
         _renderer = GetComponent<MeshRenderer>();
     }
-    
+
     private void Start()
     {
-        _renderer.material.color = Random.ColorHSV();
-    }
-
-    public Color GetColor()
-    {
-        return _renderer.material.color;
+        _renderer.material.color = new Color(0.9f,0.9f,0.9f);
     }
 }

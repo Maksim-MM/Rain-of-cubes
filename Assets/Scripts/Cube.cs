@@ -9,8 +9,12 @@ public class Cube : MonoBehaviour
 {
     private MeshRenderer _renderer;
     private Rigidbody _rigidbody;
-    private int _planeId;
-    private int _previousPlaneId;
+    private bool _isFirstTouch = true;
+    private int _minLifetime = 2;
+    private int _maxLifetime = 6;
+    private Coroutine _countCoroutine;
+    
+    public event Action<Cube> LifeStopped;
 
     private void Awake()
     {
@@ -22,22 +26,31 @@ public class Cube : MonoBehaviour
     {
         if (other.gameObject.TryGetComponent(out Plane plane))
         {
-            _planeId = plane.GetInstanceID();
-            
-            if (_planeId != _previousPlaneId)
+            if (_isFirstTouch)
             {
+                _countCoroutine = StartCoroutine(RunLifetime());
                 _renderer.material.color = Random.ColorHSV();
-                _previousPlaneId = _planeId;
+                _isFirstTouch = false;
             }
         }
     }
-
-    public void ResetToDefault()
+    
+    private IEnumerator RunLifetime()
+    {
+        var wait = new WaitForSeconds(Random.Range(_minLifetime,_maxLifetime));
+        yield return wait;
+        
+        LifeStopped?.Invoke(this);
+        
+        ResetToDefault();
+    }
+    
+    private void ResetToDefault()
     {
         _renderer.material.color = new Color(1, 1, 1);
         _rigidbody.velocity = Vector3.zero;
         _rigidbody.angularVelocity = Vector3.zero;
         transform.localRotation = Quaternion.identity;
-        _previousPlaneId = 0;
+        _isFirstTouch = true;
     }
 }

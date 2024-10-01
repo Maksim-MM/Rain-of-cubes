@@ -5,28 +5,26 @@ using Random = UnityEngine.Random;
 
 public class SpawnArea : MonoBehaviour
 {
-    [SerializeField] private GameObject _cubePrefab;
+    [SerializeField] private Cube _cubePrefab;
 
     private int _poolCapacity = 5;
     private int _poolMaxSize = 5;
-    private int _minLifetime = 2;
-    private int _maxLifetime = 6;
     private float _randomAngle;
     private float _randomRadius;
     private float _radiusScaler = 2f;
     private float _spawnDelay = 2f;
     private Vector3 _spawnOffset = new Vector3(0f, -0.75f, 0f);
-    private ObjectPool<GameObject> _cubesPool;
+    private ObjectPool<Cube> _cubesPool;
     private Coroutine _countCoroutine;
     private WaitForSeconds _wait;
 
     private void Awake()
     {
-        _cubesPool = new ObjectPool<GameObject>(
+        _cubesPool = new ObjectPool<Cube>(
             createFunc: () => Instantiate(_cubePrefab),
-            actionOnGet: (obj) => obj.SetActive(true),
-            actionOnRelease: (obj) => obj.SetActive(false),
-            actionOnDestroy: (obj) => Destroy(obj),
+            actionOnGet: (obj) => obj.gameObject.SetActive(true),
+            actionOnRelease: (obj) => obj.gameObject.SetActive(false),
+            actionOnDestroy: (obj) => Destroy(obj.gameObject),
             collectionCheck: true,
             defaultCapacity: _poolCapacity,
             maxSize: _poolMaxSize);
@@ -45,21 +43,16 @@ public class SpawnArea : MonoBehaviour
         {
             yield return _wait;
             
-            GameObject cube = _cubesPool.Get();
+            Cube cube = _cubesPool.Get();
             cube.transform.position = GetSpawnPoint();
-            
-            StartCoroutine(ReturnToPool(cube, Random.Range(_minLifetime, _maxLifetime)));
+
+            cube.LifeStopped += ReturnToPool;
         }
     }
 
-    private IEnumerator ReturnToPool(GameObject cube, int delay)
+    private void ReturnToPool(Cube cube)
     {
-        yield return new WaitForSeconds(delay);
-
-        if (cube.TryGetComponent<Cube>(out Cube cubeComponent))
-        {
-            cubeComponent.ResetToDefault();
-        }
+        cube.LifeStopped -= ReturnToPool;
         
         _cubesPool.Release(cube);
     }

@@ -12,7 +12,6 @@ public class Cube : MonoBehaviour
     private bool _isFirstTouch = true;
     private int _minLifetime = 2;
     private int _maxLifetime = 6;
-    private Coroutine _countCoroutine;
     
     public event Action<Cube> LifeStopped;
 
@@ -24,11 +23,11 @@ public class Cube : MonoBehaviour
     
     private void OnCollisionEnter(Collision other)
     {
-        if (other.gameObject.TryGetComponent(out Plane plane))
+        if (_isFirstTouch)
         {
-            if (_isFirstTouch)
+            if (other.gameObject.TryGetComponent(out Plane plane))
             {
-                _countCoroutine = StartCoroutine(RunLifetime());
+                StartCoroutine(RunLifetime());
                 _renderer.material.color = Random.ColorHSV();
                 _isFirstTouch = false;
             }
@@ -37,8 +36,7 @@ public class Cube : MonoBehaviour
     
     private IEnumerator RunLifetime()
     {
-        var wait = new WaitForSeconds(Random.Range(_minLifetime,_maxLifetime));
-        yield return wait;
+        yield return new WaitForSeconds(Random.Range(_minLifetime,_maxLifetime));
         
         LifeStopped?.Invoke(this);
         

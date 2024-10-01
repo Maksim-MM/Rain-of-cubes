@@ -11,11 +11,11 @@ public class SpawnArea : MonoBehaviour
     private int _poolMaxSize = 5;
     private float _randomAngle;
     private float _randomRadius;
+    private float _spawnerMeshRadius;
     private float _radiusScaler = 2f;
     private float _spawnDelay = 2f;
     private Vector3 _spawnOffset = new Vector3(0f, -0.75f, 0f);
     private ObjectPool<Cube> _cubesPool;
-    private Coroutine _countCoroutine;
     private WaitForSeconds _wait;
 
     private void Awake()
@@ -30,6 +30,8 @@ public class SpawnArea : MonoBehaviour
             maxSize: _poolMaxSize);
         
         _wait = new WaitForSeconds(_spawnDelay);
+
+        _spawnerMeshRadius = GetSpawnerRadius();
     }
 
     private void Start()
@@ -60,18 +62,18 @@ public class SpawnArea : MonoBehaviour
     private Vector3 GetSpawnPoint()
     {
         _randomAngle = Random.Range(0f, 360f);
-        _randomRadius = Random.Range(0f, GetSpawnerRadius());
+        _randomRadius = Random.Range(0f, _spawnerMeshRadius);
         
         Vector3 centerPosition = transform.position;
         Vector3 randomVector = Quaternion.Euler(0f, _randomAngle, 0f) * Vector3.right * _randomRadius;
-        Vector3 randomPoint = centerPosition + _spawnOffset + randomVector;
 
-        return randomPoint;
+        return centerPosition + _spawnOffset + randomVector;
     }
     
     private float GetSpawnerRadius()
     {
         Mesh mesh = GetComponent<MeshFilter>().mesh;
+        
         return mesh.bounds.size.x/_radiusScaler;
     }
 }
